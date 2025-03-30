@@ -12,10 +12,10 @@
         />
 
         <q-toolbar-title>
-          Quasar App
+          TalentInsight CRM
         </q-toolbar-title>
 
-        <div>Quasar v{{ $q.version }}</div>
+        <div>Hello</div>
       </q-toolbar>
     </q-header>
 
@@ -28,7 +28,20 @@
         <q-item-label
           header
         >
-          Essential Links
+          Settings
+        </q-item-label>
+
+        <!-- <EssentialLink
+          v-for="link in linksList"
+          :key="link.title"
+          v-bind="link"
+        /> -->
+      </q-list>
+      <q-list>
+        <q-item-label
+          header
+        >
+          Boards
         </q-item-label>
 
         <EssentialLink
@@ -51,46 +64,28 @@ import EssentialLink, { type EssentialLinkProps } from 'components/EssentialLink
 
 const linksList: EssentialLinkProps[] = [
   {
-    title: 'Docs',
-    caption: 'quasar.dev',
+    title: 'Interactions',
+    caption: 'Sales',
     icon: 'school',
-    link: 'https://quasar.dev'
+    link: '/board/1'
   },
   {
-    title: 'Github',
-    caption: 'github.com/quasarframework',
-    icon: 'code',
-    link: 'https://github.com/quasarframework'
+    title: 'Projects',
+    caption: 'Sales',
+    icon: 'school',
+    link: '/board/2'
   },
   {
-    title: 'Discord Chat Channel',
-    caption: 'chat.quasar.dev',
-    icon: 'chat',
-    link: 'https://chat.quasar.dev'
+    title: 'Delieveries',
+    caption: 'Operations',
+    icon: 'school',
+    link: '/board/3'
   },
   {
-    title: 'Forum',
-    caption: 'forum.quasar.dev',
-    icon: 'record_voice_over',
-    link: 'https://forum.quasar.dev'
-  },
-  {
-    title: 'Twitter',
-    caption: '@quasarframework',
-    icon: 'rss_feed',
-    link: 'https://twitter.quasar.dev'
-  },
-  {
-    title: 'Facebook',
-    caption: '@QuasarFramework',
-    icon: 'public',
-    link: 'https://facebook.quasar.dev'
-  },
-  {
-    title: 'Quasar Awesome',
-    caption: 'Community Quasar projects',
-    icon: 'favorite',
-    link: 'https://awesome.quasar.dev'
+    title: 'Payments',
+    caption: 'Finance',
+    icon: 'money',
+    link: '/board/4'
   }
 ];
 
