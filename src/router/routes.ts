@@ -13,10 +13,15 @@ const routes: RouteRecordRaw[] = [
         props: true,
       },
     ],
+    meta: { requiresAuth: true },
   },
 
-  // Always leave this as last one,
-  // but you can also remove it
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('pages/LoginPage.vue'),
+  },
+
   {
     path: '/:catchAll(.*)*',
     component: () => import('pages/ErrorNotFound.vue'),
