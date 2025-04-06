@@ -62,7 +62,7 @@ api.interceptors.response.use(
 
             return new Promise<AxiosResponse>((resolve, reject) => {
                 axios
-                    .post('http://localhost:3000/api/auth/refresh', {}, { withCredentials: true })
+                    .post('http://localhost:3000/auth/refresh', {}, { withCredentials: true })
                     .then((response) => {
                         const newToken = response.data.accessToken as string;
                         localStorage.setItem('accessToken', newToken);

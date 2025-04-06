@@ -5,7 +5,9 @@
         <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
 
         <q-toolbar-title>
-          TalentInsight CRM
+          <router-link to="/" style="text-decoration: none; color: inherit;">
+            TalentInsight CRM
+          </router-link>
         </q-toolbar-title>
 
         <div>Hello</div>
@@ -121,7 +123,7 @@ const boardsFolders = [
         link: '/board/13'
       }
     ]
-    
+
   },
 ]
 
