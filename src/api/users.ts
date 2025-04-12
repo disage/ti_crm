@@ -9,3 +9,13 @@ export const updateUser = (id: string, data: { name: string; role: UserRole }) =
   api.patch(`/users/${id}`, data);
 
 export const deleteUser = (id: string) => api.delete(`/users/${id}`);
+
+export const fetchUserData = async () => {
+  try {
+    const response = await api.get('/users/me');
+    return response.data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+};

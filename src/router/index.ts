@@ -6,6 +6,8 @@ import {
   createWebHistory,
 } from 'vue-router';
 import routes from './routes';
+import { fetchUserData } from '../api/users'; // Импортируем функцию для получения данных пользователя
+import { useUserStore } from '../stores/userStore'; // Импортируем Pinia store
 
 function isAuthenticated(): boolean {
   const token = localStorage.getItem('accessToken');
@@ -23,12 +25,24 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     history: createHistory(process.env.VUE_ROUTER_BASE),
   });
 
-  Router.beforeEach((to, from, next) => {
+  Router.beforeEach(async (to, from, next) => {
+    const userStore = useUserStore();
+
     if (to.meta.requiresAuth && !isAuthenticated()) {
       next({ name: 'Login' });
-    } else {
-      next();
+      return;
     }
+
+    if (!userStore.user && isAuthenticated()) {
+      try {
+        const userData = await fetchUserData();
+        userStore.setUser(userData);
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+
+    next();
   });
 
   return Router;

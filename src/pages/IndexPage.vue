@@ -13,25 +13,21 @@
               <img :src="user.imgUrl || 'https://cdn.quasar.dev/img/avatar.png'" />
             </q-avatar>
           </q-item-section>
-
           <q-item-section>
             <q-item-label>{{ user.name }}</q-item-label>
             <q-item-label caption>{{ roleLabels[user.role] }}</q-item-label>
           </q-item-section>
-
           <q-item-section side>
             <q-btn flat dense icon="settings" @click.stop="openEditModal(user)" />
           </q-item-section>
         </q-item>
       </q-list>
     </q-card>
-
     <q-dialog v-model="editDialog">
       <q-card class="q-pa-md" style="min-width: 300px;">
         <q-card-section>
           <div class="text-h6">Edit User</div>
         </q-card-section>
-
         <q-card-section>
           <q-input v-model="editUser.name" label="Name" dense outlined class="q-mb-sm" />
           <q-input v-model="editUser.email" label="Email" dense outlined disable class="q-mb-sm" />
@@ -48,18 +44,15 @@
         </q-card-section>
       </q-card>
     </q-dialog>
-
     <q-dialog v-model="addDialog">
       <q-card class="q-pa-md" style="min-width: 300px;">
         <q-card-section>
           <div class="text-h6">Add New User</div>
         </q-card-section>
-
         <q-card-section>
           <q-input v-model="newUser.email" label="Email" dense outlined class="q-mb-sm" />
           <q-input v-model="newUser.password" label="Password" type="password" dense outlined class="q-mb-sm" />
         </q-card-section>
-
         <q-card-actions align="right">
           <q-btn flat label="Cancel" color="primary" v-close-popup />
           <q-btn flat label="Add" color="primary" @click="addUserHandler" />
@@ -155,7 +148,6 @@ async function saveEdit() {
   }
 }
 
-
 async function addUserHandler() {
   try {
     await addUser(newUser.value);
@@ -174,7 +166,7 @@ async function fetchUsers() {
     if (err instanceof Error) {
       error.value = err.message;
     } else {
-      error.value = 'Ошибка';
+      error.value = 'Error';
     }
   }
 }
