@@ -1,7 +1,11 @@
+export type BoardType = 'private' | 'shared' | 'public';
+
 export interface Board {
-    title: string;
-    icon: string;
-    link: string;
+  id: string;
+  name: string;
+  type: BoardType;
+  folderId?: string | null;
+  icon?: string;
 }
 
 export interface Folder {
@@ -20,3 +24,8 @@ export interface Folder {
   }
 
   export type FolderType = 'private' | 'public' | 'shared';
+
+  export interface BoardsResponse {
+    folders: Folder[];
+    topLevelBoards: Board[];
+  }

@@ -2,7 +2,7 @@
   <q-item
     clickable
     tag="router-link"
-    :to="link"
+    :to="`/board/${id}`"
   >
     <q-item-section
       v-if="icon"
@@ -12,23 +12,29 @@
     </q-item-section>
 
     <q-item-section>
-      <q-item-label>{{ title }}</q-item-label>
-      <q-item-label caption>{{ caption }}</q-item-label>
+      <q-item-label>{{ name }}</q-item-label>
+      <q-item-label caption>{{ type }}</q-item-label>
     </q-item-section>
   </q-item>
 </template>
 
 <script setup lang="ts">
-export interface EssentialLinkProps {
-  title: string;
-  caption?: string;
-  link?: string;
-  icon?: string;
-};
-
-withDefaults(defineProps<EssentialLinkProps>(), {
-  caption: '',
-  link: '#',
-  icon: '',
+defineProps({
+  name: {
+    type: String,
+    required: true
+  },
+  type: {
+    type: String,
+    default: ''
+  },
+  id: {
+    type: String,
+    default: ''
+  },
+  icon: {
+    type: String,
+    default: 'dashboard'
+  }
 });
 </script>

@@ -8,7 +8,7 @@
             TalentInsight CRM
           </router-link>
         </q-toolbar-title>
-        <div>Hello, {{ userStore.user?.name}} </div>
+        <div>Hello, {{ userStore.user?.name }} </div>
         <q-btn flat dense icon="logout" @click="handleLogout" />
       </q-toolbar>
     </q-header>
@@ -24,10 +24,10 @@
             <q-item-label header class="q-pl-none">Boards</q-item-label>
           </q-item-section>
           <q-item-section side>
-            <q-btn size="sm" flat dense icon="folder" @click="openAddFolderDialog" aria-label="Add folder" />
+            <q-btn size="m" flat dense icon="folder" aria-label="Add folder" @click="openAddFolderDialog" />
           </q-item-section>
           <q-item-section side>
-            <q-btn size="sm" flat dense icon="add" aria-label="Add board" />
+            <q-btn size="m" flat dense icon="add" aria-label="Add board" @click="openBoardModal" />
           </q-item-section>
         </q-item>
         <q-expansion-item v-for="folder in boardsFolders" :key="folder.name" expand-separator :label="folder.name"
@@ -57,8 +57,14 @@
               <q-item-label caption>{{ folder.type }}</q-item-label>
             </q-item-section>
           </template>
-          <EssentialLink v-for="board in folder.boards" :key="board.title" v-bind="board" />
+          <EssentialLink v-for="board in folder.boards" :key="board.name" v-bind="board" />
         </q-expansion-item>
+        <EssentialLink v-for="board in topLevelBoardsList" :key="board.id" v-bind="board" />
+        <!-- <q-item v-for="board in topLevelBoardsList" :key="board.id" clickable @click="navigateToBoard(board.id)">
+          <q-item-section>
+            <q-item-label>{{ board.name }}</q-item-label>
+          </q-item-section>
+        </q-item> -->
       </q-list>
     </q-drawer>
     <q-page-container>
@@ -105,6 +111,25 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+    <q-dialog v-model="boardDialogOpen">
+      <q-card class="q-pa-md" style="min-width: 300px;">
+        <q-card-section>
+          <div class="text-h6">Create Board</div>
+        </q-card-section>
+        <q-card-section>
+          <q-input v-model="boardForm.name" label="Board Name" outlined dense class="q-mb-sm" />
+          <q-select v-model="boardForm.type" :options="[
+            { label: 'Public', value: 'public' },
+            { label: 'Private', value: 'private' },
+            { label: 'Shared', value: 'shared' },
+          ]" label="Board Type" emit-value map-options outlined dense class="q-mb-sm" />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" color="primary" v-close-popup />
+          <q-btn flat label="Create" color="primary" @click="handleCreateBoard" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-layout>
 </template>
 
@@ -113,10 +138,10 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
 import EssentialLink from 'components/EssentialLink.vue';
-import { getBoardsList, deleteFolder, createFolder, updateFolder } from 'src/api/boards';
+import { getBoardsList, deleteFolder, createFolder, updateFolder, createBoard } from 'src/api/boards';
 import { logout } from 'src/api/auth';
 import { useUserStore } from 'src/stores/userStore';
-import type { Folder, FolderType } from 'src/interfaces/board';
+import type { Board, BoardType, Folder, FolderType } from 'src/interfaces/board';
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -125,13 +150,16 @@ const addFolderDialogOpen = ref(false);
 const deleteDialogOpen = ref(false);
 const leftDrawerOpen = ref(false);
 const renameDialogOpen = ref(false);
+const boardDialogOpen = ref(false);
 
 const activeFolder = ref<Folder | null>(null);
 const newFolderName = ref(''); //for edit modal
 const newFolderTitle = ref(''); //for add modal
 const newFolderType = ref<FolderType>('public');
+const boardForm = ref<{ name: string; type: BoardType }>({ name: '', type: 'public' });
 
 const boardsFolders = ref<Folder[]>([]);
+const topLevelBoardsList = ref<Board[]>([]);
 
 const folderTypes = [
   { label: 'Public', value: 'public' },
@@ -226,16 +254,43 @@ async function confirmAddFolder() {
 async function fetchFolders() {
   try {
     const response = await getBoardsList();
-    boardsFolders.value = response.data.map((folder: Folder) => ({
+    const { folders, topLevelBoards } = response.data;
+
+    boardsFolders.value = folders.map((folder: Folder) => ({
       id: folder.id,
       name: folder.name,
       order: folder.order,
       ownerId: folder.ownerId,
       type: folder.type,
-      boards: []
+      boards: folder.boards || [],
     }));
+
+    topLevelBoardsList.value = topLevelBoards || [];
   } catch (error) {
-    console.error('Failed to fetch folders:', error);
+    console.error('Failed to fetch folders and boards:', error);
+  }
+}
+
+function openBoardModal() {
+  boardForm.value = { name: '', type: 'public' };
+  boardDialogOpen.value = true;
+}
+
+
+async function handleCreateBoard() {
+  try {
+    const response = await createBoard({
+      name: boardForm.value.name,
+      icon: 'dashboard',
+      type: boardForm.value.type,
+      folderId: null,
+    });
+
+    console.log('Board created:', response.data);
+    boardDialogOpen.value = false;
+    await fetchFolders()
+  } catch (error) {
+    console.error('Board creation error', error);
   }
 }
 

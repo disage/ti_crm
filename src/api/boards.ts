@@ -1,9 +1,11 @@
 import api from './api';
-import type { Folder, FolderType, CreateFolderDTO } from 'src/interfaces/board';
+import type { Board, CreateFolderDTO, BoardsResponse, FolderType } from 'src/interfaces/board';
 
-export const getBoardsList = () => api.get<Folder[]>('/boards');
+export const getBoardsList = () => api.get<BoardsResponse>('/boards');
 
 export const deleteFolder = (id: string) => api.delete(`/boards/folder/${id}`);
+
+export const deleteBoard = (id: string) => api.delete(`/boards/${id}`);
 
 export const createFolder = async (dto: CreateFolderDTO) => {
   const response = await api.post('/boards/folder', dto);
@@ -11,3 +13,7 @@ export const createFolder = async (dto: CreateFolderDTO) => {
 };
 
 export const updateFolder = (id: string, data: { name: string; type: FolderType }) => api.patch(`/boards/folder/${id}`, data);
+
+export function createBoard(data: { name: string; icon: string, type: Board['type']; folderId?: string | null }) {
+  return api.post<Board>('/boards', data);
+}

@@ -1,7 +1,27 @@
 <!-- eslint-disable vue/no-unused-vars -->
 <template>
     <q-page class="q-pa-md">
-        <h5>Sales / Jessica Contacts</h5>
+        <div class="row items-center">
+            <h5 class="q-mr-md">Sales / Jessica Contacts</h5>
+            <q-btn
+              flat
+              dense
+              icon="settings"
+              color="primary"
+              @click="toggleBoardMenu"
+            >
+            <q-menu anchor="bottom left" self="top left">
+                <q-list>
+                    <q-item clickable @click="handleChangeType">
+                        <q-item-section >Change Type</q-item-section>
+                    </q-item>
+                    <q-item clickable @click="handleDeleteBoard">
+                        <q-item-section class="text-negative">Delete</q-item-section>
+                    </q-item>
+                </q-list>
+            </q-menu>
+        </q-btn>
+        </div>
         <q-card>
             <q-card-section>
                 <q-btn color="primary" @click="addRow">Add Item</q-btn>
@@ -120,6 +140,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { deleteBoard } from 'src/api/boards';
 
 interface Column {
     name: string;
@@ -136,6 +158,12 @@ interface Row {
     [key: string]: unknown;
 }
 
+const route = useRoute();
+const router = useRouter();
+
+const boardId = route.params.boardId as string;
+
+const boardMenuOpen = ref(false)
 const tableRef = ref();
 const availableTypes: Column["type"][] = ["text", "number", "date", "select"];
 
@@ -159,6 +187,23 @@ const newOption = ref('');
 const pagination = ref({ rowsPerPage: 20 });
 let resizingColumnIndex: number | null = null;
 let draggedColumnIndex: number | null = null;
+
+const toggleBoardMenu = () => {
+    boardMenuOpen.value = true;
+}
+
+const handleDeleteBoard = async () => {
+    try {
+        await deleteBoard(boardId);
+        await router.push('/');
+    } catch (error) {
+        console.error('Error', error);
+    }
+}
+
+const handleChangeType = () => {
+  console.log("Changing board type...");
+}
 
 const addRow = () => {
     const newId = rows.value.length ? Math.max(...rows.value.map(row => row.id)) + 1 : 1;
@@ -236,7 +281,6 @@ const onColumnTypeChange = (col: Column) => {
     }
 };
 
-
 const openOptionsModal = (col: Column) => {
     selectedColumn.value = col;
     isOptionsModalOpen.value = true;
@@ -293,11 +337,11 @@ const removeOption = (index: number) => {
     background-color: gray;
 }
 
-::v-deep .q-field__native:focus  {
+::deep .q-field__native:focus  {
     border: 1px solid #ccc;
   }
 
-  ::v-deep .q-table th, .q-table td {
+  ::deep .q-table th, .q-table td {
     padding: 5px;
   }
 </style>
