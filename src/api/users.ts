@@ -10,7 +10,7 @@ export const updateUser = (id: string, data: { name: string; role: UserRole }) =
 
 export const deleteUser = (id: string) => api.delete(`/users/${id}`);
 
-export const fetchUserData = async () => {
+export const fetchCurrentUserData = async () => {
   try {
     const response = await api.get('/users/me');
     return response.data;

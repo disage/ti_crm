@@ -14,9 +14,7 @@
     </q-header>
     <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
       <q-list>
-        <q-item-label header>
-          Settings
-        </q-item-label>
+        <q-item-label header>Settings</q-item-label>
       </q-list>
       <q-list>
         <q-item>
@@ -30,8 +28,11 @@
             <q-btn size="m" flat dense icon="add" aria-label="Add board" @click="openBoardModal" />
           </q-item-section>
         </q-item>
-        <q-expansion-item v-for="folder in boardsFolders" :key="folder.name" expand-separator :label="folder.name"
-          :caption="folder.type" default-closed>
+        <q-expansion-item v-for="folder in boardStore.folders" :key="folder.name" expand-separator :label="folder.name"
+          :caption="folder.type" default-closed :ref="el => setFolderRef(el, folder.id)" @dragover.prevent
+          @dragenter.prevent="onDragEnterFolder(folder.id)"
+          @dragleave.prevent="(event: DragEvent) => onDragLeaveFolder(folder.id, event)"
+          :class="{ 'hovered-folder': hoveredFolderId === folder.id }">
           <template #header>
             <q-item-section avatar>
               <q-btn dense flat round icon="folder" @click.stop.prevent>
@@ -40,7 +41,8 @@
                     <q-item clickable>
                       <q-item-section>
                         <q-select borderless v-model="folder.type" :options="folderTypes" emit-value map-options
-                          @update:model-value="updateFolderType(folder)" label="Change Type" /> </q-item-section>
+                          @update:model-value="updateFolderType(folder)" label="Change Type" />
+                      </q-item-section>
                     </q-item>
                     <q-item clickable v-close-popup @click="openRenameDialog(folder)">
                       <q-item-section>Rename</q-item-section>
@@ -52,25 +54,57 @@
                 </q-menu>
               </q-btn>
             </q-item-section>
-            <q-item-section>
-              <q-item-label>{{ folder.name }}</q-item-label>
-              <q-item-label caption>{{ folder.type }}</q-item-label>
-            </q-item-section>
+
+            <div @dragenter.prevent="onDragEnterFolder(folder.id)"
+              @dragleave.prevent="(event: DragEvent) => onDragLeaveFolder(folder.id, event)"
+              class="folder-header-hover-zone">
+              <q-item-section>
+                <q-item-label @dragenter.prevent="onDragEnterFolder(folder.id)"
+                  @dragleave.prevent="(event: DragEvent) => onDragLeaveFolder(folder.id, event)"
+                  @drop.prevent="(event: DragEvent) => onDropOnFolder(event, folder.id)">
+                  {{ folder.name }}
+                </q-item-label>
+                <q-item-label caption>
+                  {{ folder.type }}
+                </q-item-label>
+              </q-item-section>
+            </div>
           </template>
-          <EssentialLink v-for="board in folder.boards" :key="board.name" v-bind="board" />
+
+          <div :ref="el => setFolderContainerRef(folder.id, el)" class="folder-wrapper">
+            <draggable :list="folder.boards" group="boards" item-key="id" @change="onBoardDrop($event, folder.id)"
+              ghost-class="ghost-board">
+              <template #item="{ element }">
+                <div class="q-pl-xl" @dragenter.prevent="onDragEnterFolder(folder.id)"
+                  @dragleave.prevent="(event: DragEvent) => onDragLeaveFolder(folder.id, event)" draggable
+                  @dragstart="onDragStartBoard(element.id)">
+                  <EssentialLink v-bind="element" />
+                </div>
+              </template>
+            </draggable>
+          </div>
+
         </q-expansion-item>
-        <EssentialLink v-for="board in topLevelBoardsList" :key="board.id" v-bind="board" />
-        <!-- <q-item v-for="board in topLevelBoardsList" :key="board.id" clickable @click="navigateToBoard(board.id)">
-          <q-item-section>
-            <q-item-label>{{ board.name }}</q-item-label>
-          </q-item-section>
-        </q-item> -->
+        <div ref="rootZoneRef" class="root-drop-zone" :class="{ 'hovered-folder': hoveredFolderId === ROOT_FOLDER_ID }"
+          @dragenter.prevent="onDragEnterFolder(ROOT_FOLDER_ID)"
+          @dragleave.prevent="(event) => onDragLeaveFolder(ROOT_FOLDER_ID, event)">
+          <draggable :list="boardStore.topLevelBoards" group="boards" item-key="id" @change="onBoardDrop($event, null)"
+            ghost-class="ghost-board">
+            <template #item="{ element }">
+              <div @dragenter.prevent="onDragEnterFolder(ROOT_FOLDER_ID)" draggable
+                @dragstart="onDragStartBoard(element.id)">
+                <EssentialLink v-bind="element" />
+              </div>
+            </template>
+          </draggable>
+        </div>
+
       </q-list>
     </q-drawer>
     <q-page-container>
       <router-view />
     </q-page-container>
-    <q-dialog v-model="renameDialogOpen">
+    <q-dialog v-model="isRenameDialogOpen">
       <q-card style="min-width: 350px">
         <q-card-section>
           <div class="text-h6">Rename folder</div>
@@ -84,7 +118,7 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
-    <q-dialog v-model="deleteDialogOpen">
+    <q-dialog v-model="isDeleteDialogOpen">
       <q-card>
         <q-card-section class="text-h6">
           Delete Folder "{{ activeFolder?.name }}"?
@@ -95,7 +129,7 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
-    <q-dialog v-model="addFolderDialogOpen">
+    <q-dialog v-model="isAddFolderDialogOpen">
       <q-card style="min-width: 400px">
         <q-card-section>
           <div class="text-h6">Add new folder</div>
@@ -111,7 +145,7 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
-    <q-dialog v-model="boardDialogOpen">
+    <q-dialog v-model="isBoardDialogOpen">
       <q-card class="q-pa-md" style="min-width: 300px;">
         <q-card-section>
           <div class="text-h6">Create Board</div>
@@ -135,37 +169,64 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import type { ComponentPublicInstance } from 'vue';
 import { useRouter } from 'vue-router';
 
-import EssentialLink from 'components/EssentialLink.vue';
-import { getBoardsList, deleteFolder, createFolder, updateFolder, createBoard } from 'src/api/boards';
+import type { QExpansionItem } from 'quasar';
+import draggable from 'vuedraggable';
+
 import { logout } from 'src/api/auth';
+import { updateFolder, createBoard } from 'src/api/boards';
+import { useBoardStore } from 'src/stores/boardStore';
+import { useDialogs } from 'src/composables/useDialogs';
+import { useDragAndDrop } from 'src/composables/useDragAndDrop';
 import { useUserStore } from 'src/stores/userStore';
-import type { Board, BoardType, Folder, FolderType } from 'src/interfaces/board';
+import EssentialLink from 'components/EssentialLink.vue';
+import type { Folder } from 'src/interfaces/board';
 
 const router = useRouter();
+const boardStore = useBoardStore();
 const userStore = useUserStore();
 
-const addFolderDialogOpen = ref(false);
-const deleteDialogOpen = ref(false);
 const leftDrawerOpen = ref(false);
-const renameDialogOpen = ref(false);
-const boardDialogOpen = ref(false);
-
-const activeFolder = ref<Folder | null>(null);
-const newFolderName = ref(''); //for edit modal
-const newFolderTitle = ref(''); //for add modal
-const newFolderType = ref<FolderType>('public');
-const boardForm = ref<{ name: string; type: BoardType }>({ name: '', type: 'public' });
-
-const boardsFolders = ref<Folder[]>([]);
-const topLevelBoardsList = ref<Board[]>([]);
 
 const folderTypes = [
   { label: 'Public', value: 'public' },
   { label: 'Private', value: 'private' },
   { label: 'Shared', value: 'shared' }
 ];
+
+const {
+  activeFolder,
+  isAddFolderDialogOpen,
+  isBoardDialogOpen,
+  boardForm,
+  confirmAddFolder,
+  confirmDelete,
+  confirmRename,
+  isDeleteDialogOpen,
+  newFolderName,
+  newFolderTitle,
+  newFolderType,
+  openAddFolderDialog,
+  openBoardModal,
+  openDeleteDialog,
+  openRenameDialog,
+  isRenameDialogOpen,
+} = useDialogs();
+
+const {
+  folderContainerRefs,
+  hoveredFolderId,
+  onBoardDrop,
+  onDragEnterFolder,
+  onDragLeaveFolder,
+  onDragStartBoard,
+  onDropOnFolder,
+  ROOT_FOLDER_ID,
+  rootZoneRef,
+  setFolderRef,
+} = useDragAndDrop();
 
 async function handleLogout() {
   try {
@@ -182,38 +243,6 @@ function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value;
 }
 
-function openRenameDialog(folder: Folder) {
-  activeFolder.value = folder;
-  newFolderName.value = folder.name;
-  renameDialogOpen.value = true;
-}
-
-function openDeleteDialog(folder: Folder) {
-  activeFolder.value = folder;
-  deleteDialogOpen.value = true;
-}
-
-async function confirmRename() {
-  if (activeFolder.value) {
-    activeFolder.value.name = newFolderName.value.trim();
-    await updateFolder(activeFolder.value.id, { name: activeFolder.value.name, type: activeFolder.value.type })
-  }
-  renameDialogOpen.value = false;
-}
-
-async function confirmDelete() {
-  if (activeFolder.value) {
-    try {
-      await deleteFolder(activeFolder.value.id);
-      await fetchFolders();
-    } catch (error) {
-      console.error('Error', error);
-    } finally {
-      deleteDialogOpen.value = false;
-    }
-  }
-}
-
 async function updateFolderType(folder: Folder) {
   try {
     await updateFolder(folder.id, { name: folder.name, type: folder.type });
@@ -222,79 +251,52 @@ async function updateFolderType(folder: Folder) {
   }
 }
 
-function openAddFolderDialog() {
-  newFolderTitle.value = '';
-  addFolderDialogOpen.value = true;
-}
-
-async function confirmAddFolder() {
-  if (newFolderTitle.value.trim()) {
-    const dto = {
-      name: newFolderTitle.value.trim(),
-      order: boardsFolders.value.length + 1,
-      type: newFolderType.value,
-      visibleToUserIds: [],
-    };
-
-    try {
-      const newFolder = await createFolder(dto);
-      boardsFolders.value.push(newFolder);
-    } catch (error) {
-      console.error('Error during adding folder:', error);
-    } finally {
-      addFolderDialogOpen.value = false;
-      newFolderTitle.value = '';
-      // newFolderType.value = '';
-    }
-  } else {
-    console.log('Enter folder name');
-  }
-}
-
-async function fetchFolders() {
-  try {
-    const response = await getBoardsList();
-    const { folders, topLevelBoards } = response.data;
-
-    boardsFolders.value = folders.map((folder: Folder) => ({
-      id: folder.id,
-      name: folder.name,
-      order: folder.order,
-      ownerId: folder.ownerId,
-      type: folder.type,
-      boards: folder.boards || [],
-    }));
-
-    topLevelBoardsList.value = topLevelBoards || [];
-  } catch (error) {
-    console.error('Failed to fetch folders and boards:', error);
-  }
-}
-
-function openBoardModal() {
-  boardForm.value = { name: '', type: 'public' };
-  boardDialogOpen.value = true;
-}
-
-
 async function handleCreateBoard() {
   try {
-    const response = await createBoard({
+    await createBoard({
       name: boardForm.value.name,
       icon: 'dashboard',
       type: boardForm.value.type,
       folderId: null,
     });
 
-    console.log('Board created:', response.data);
-    boardDialogOpen.value = false;
-    await fetchFolders()
+    isBoardDialogOpen.value = false;
+    await boardStore.fetchBoards();
   } catch (error) {
     console.error('Board creation error', error);
   }
 }
 
+function setFolderContainerRef(folderId: string, el: Element | ComponentPublicInstance | null) {
+  if (el instanceof HTMLElement) {
+    folderContainerRefs.value[folderId] = el;
+  } else {
+    folderContainerRefs.value[folderId] = null;
+  }
+}
+
 onMounted(async () => {
-  await fetchFolders();
+  await boardStore.fetchBoards();
 });
 </script>
+
+<style>
+.hovered-folder {
+  box-shadow: inset 0 0 0 2px #4285f4;
+  background-color: rgba(66, 133, 244, 0.05);
+}
+
+.ghost-board {
+  opacity: 0.2;
+  background-color: var(--q-primary);
+  pointer-events: none;
+}
+
+.folder-header-hover-zone {
+  width: 100%;
+}
+
+.root-drop-zone {
+  min-height: 60px;
+}
+</style>

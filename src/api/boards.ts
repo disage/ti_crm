@@ -17,3 +17,7 @@ export const updateFolder = (id: string, data: { name: string; type: FolderType 
 export function createBoard(data: { name: string; icon: string, type: Board['type']; folderId?: string | null }) {
   return api.post<Board>('/boards', data);
 }
+
+export async function moveBoard(boardId: string, data: { folderId: string | null; order: number }) {
+  return api.patch(`/boards/move/${boardId}`, data);
+}

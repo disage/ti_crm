@@ -142,6 +142,7 @@
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { deleteBoard } from 'src/api/boards';
+import { useBoardStore } from 'src/stores/boardStore';
 
 interface Column {
     name: string;
@@ -158,6 +159,7 @@ interface Row {
     [key: string]: unknown;
 }
 
+const boardStore = useBoardStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -195,6 +197,7 @@ const toggleBoardMenu = () => {
 const handleDeleteBoard = async () => {
     try {
         await deleteBoard(boardId);
+        await boardStore.fetchBoards();
         await router.push('/');
     } catch (error) {
         console.error('Error', error);
