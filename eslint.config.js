@@ -1,9 +1,12 @@
-import js from '@eslint/js'
-import globals from 'globals'
-import pluginVue from 'eslint-plugin-vue'
-import pluginQuasar from '@quasar/app-vite/eslint'
-import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
-import prettierSkipFormatting from '@vue/eslint-config-prettier/skip-formatting'
+import js from '@eslint/js';
+import globals from 'globals';
+import pluginVue from 'eslint-plugin-vue';
+import pluginQuasar from '@quasar/app-vite/eslint';
+import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript';
+import prettierSkipFormatting from '@vue/eslint-config-prettier/skip-formatting';
+import eslintConfigPrettier from 'eslint-config-prettier';
+import eslintPluginPrettier from 'eslint-plugin-prettier';
+import eslintPluginPromise from 'eslint-plugin-promise';
 
 export default defineConfigWithVueTs(
   {
@@ -17,41 +20,27 @@ export default defineConfigWithVueTs(
      */
     // ignores: []
   },
-
   pluginQuasar.configs.recommended(),
   js.configs.recommended,
+  pluginVue.configs['flat/essential'],
 
-  /**
-   * https://eslint.vuejs.org
-   *
-   * pluginVue.configs.base
-   *   -> Settings and rules to enable correct ESLint parsing.
-   * pluginVue.configs[ 'flat/essential']
-   *   -> base, plus rules to prevent errors or unintended behavior.
-   * pluginVue.configs["flat/strongly-recommended"]
-   *   -> Above, plus rules to considerably improve code readability and/or dev experience.
-   * pluginVue.configs["flat/recommended"]
-   *   -> Above, plus rules to enforce subjective community defaults to ensure consistency.
-   */
-  pluginVue.configs[ 'flat/essential' ],
-
+  // Правила для TypeScript и Vue
   {
     files: ['**/*.ts', '**/*.vue'],
     rules: {
-      '@typescript-eslint/consistent-type-imports': [
-        'error',
-        { prefer: 'type-imports' }
-      ],
-    }
+      '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
+      'no-await-in-loop': 'error',
+      'promise/prefer-await-to-then': 'off', // Указано с префиксом 'promise/'
+    },
   },
-  // https://github.com/vuejs/eslint-config-typescript
+
+  // Настройка для TypeScript
   vueTsConfigs.recommendedTypeChecked,
 
   {
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
-
       globals: {
         ...globals.browser,
         ...globals.node, // SSR, Electron, config files
@@ -60,27 +49,50 @@ export default defineConfigWithVueTs(
         cordova: 'readonly',
         Capacitor: 'readonly',
         chrome: 'readonly', // BEX related
-        browser: 'readonly' // BEX related
-      }
+        browser: 'readonly', // BEX related
+      },
     },
 
-    // add your custom rules here
     rules: {
       'prefer-promise-reject-errors': 'off',
-
-      // allow debugger during development only
-      'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off'
-    }
+      'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
+    },
   },
 
+  // Конфигурация для PWA и сервисного работника
   {
-    files: [ 'src-pwa/custom-service-worker.ts' ],
+    files: ['src-pwa/custom-service-worker.ts'],
     languageOptions: {
       globals: {
-        ...globals.serviceworker
-      }
-    }
+        ...globals.serviceworker,
+      },
+    },
   },
 
-  prettierSkipFormatting
-)
+  // Пропуск форматирования Prettier для конфликтующих правил
+  prettierSkipFormatting,
+
+  // Включение конфигурации Prettier, чтобы отключить конфликтующие правила
+  eslintConfigPrettier,
+
+  // Включение Prettier плагина
+  {
+    plugins: {
+      prettier: eslintPluginPrettier,
+      promise: eslintPluginPromise, // Добавляем плагин promise
+    },
+    rules: {
+      'prettier/prettier': [
+        'error',
+        {
+          singleQuote: true,
+          printWidth: 100,
+          trailingComma: 'es5',
+          semi: true,
+          jsxSingleQuote: true,
+          bracketSpacing: true,
+        },
+      ],
+    },
+  }
+);

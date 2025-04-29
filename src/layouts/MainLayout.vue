@@ -4,11 +4,11 @@
       <q-toolbar>
         <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
         <q-toolbar-title>
-          <router-link to="/" style="text-decoration: none; color: inherit;">
+          <router-link to="/" style="text-decoration: none; color: inherit">
             TalentInsight CRM
           </router-link>
         </q-toolbar-title>
-        <div>Hello, {{ userStore.user?.name }} </div>
+        <div>Hello, {{ userStore.user?.name }}</div>
         <q-btn flat dense icon="logout" @click="handleLogout" />
       </q-toolbar>
     </q-header>
@@ -22,17 +22,32 @@
             <q-item-label header class="q-pl-none">Boards</q-item-label>
           </q-item-section>
           <q-item-section side>
-            <q-btn size="m" flat dense icon="folder" aria-label="Add folder" @click="openAddFolderDialog" />
+            <q-btn
+              size="m"
+              flat
+              dense
+              icon="folder"
+              aria-label="Add folder"
+              @click="openAddFolderDialog"
+            />
           </q-item-section>
           <q-item-section side>
             <q-btn size="m" flat dense icon="add" aria-label="Add board" @click="openBoardModal" />
           </q-item-section>
         </q-item>
-        <q-expansion-item v-for="folder in boardStore.folders" :key="folder.name" expand-separator :label="folder.name"
-          :caption="folder.type" default-closed :ref="el => setFolderRef(el, folder.id)" @dragover.prevent
+        <q-expansion-item
+          v-for="folder in boardStore.folders"
+          :key="folder.name"
+          expand-separator
+          :label="folder.name"
+          :caption="folder.type"
+          default-closed
+          :ref="(el) => setFolderRef(el, folder.id)"
+          @dragover.prevent
           @dragenter.prevent="onDragEnterFolder(folder.id)"
           @dragleave.prevent="(event: DragEvent) => onDragLeaveFolder(folder.id, event)"
-          :class="{ 'hovered-folder': hoveredFolderId === folder.id }">
+          :class="{ 'hovered-folder': hoveredFolderId === folder.id }"
+        >
           <template #header>
             <q-item-section avatar>
               <q-btn dense flat round icon="folder" @click.stop.prevent>
@@ -40,8 +55,15 @@
                   <q-list style="min-width: 150px">
                     <q-item clickable>
                       <q-item-section>
-                        <q-select borderless v-model="folder.type" :options="folderTypes" emit-value map-options
-                          @update:model-value="updateFolderType(folder)" label="Change Type" />
+                        <q-select
+                          borderless
+                          v-model="folder.type"
+                          :options="folderTypes"
+                          emit-value
+                          map-options
+                          @update:model-value="updateFolderType(folder)"
+                          label="Change Type"
+                        />
                       </q-item-section>
                     </q-item>
                     <q-item clickable v-close-popup @click="openRenameDialog(folder)">
@@ -55,13 +77,17 @@
               </q-btn>
             </q-item-section>
 
-            <div @dragenter.prevent="onDragEnterFolder(folder.id)"
+            <div
+              @dragenter.prevent="onDragEnterFolder(folder.id)"
               @dragleave.prevent="(event: DragEvent) => onDragLeaveFolder(folder.id, event)"
-              class="folder-header-hover-zone">
-              <q-item-section>
-                <q-item-label @dragenter.prevent="onDragEnterFolder(folder.id)"
-                  @dragleave.prevent="(event: DragEvent) => onDragLeaveFolder(folder.id, event)"
-                  @drop.prevent="(event: DragEvent) => onDropOnFolder(event, folder.id)">
+              class="folder-header-hover-zone"
+            >
+              <q-item-section
+                @dragenter.prevent="onDragEnterFolder(folder.id)"
+                @dragleave.prevent="(event: DragEvent) => onDragLeaveFolder(folder.id, event)"
+                @drop.prevent="(event: DragEvent) => onDropOnFolder(event, folder.id)"
+              >
+                <q-item-label>
                   {{ folder.name }}
                 </q-item-label>
                 <q-item-label caption>
@@ -71,34 +97,53 @@
             </div>
           </template>
 
-          <div :ref="el => setFolderContainerRef(folder.id, el)" class="folder-wrapper">
-            <draggable :list="folder.boards" group="boards" item-key="id" @change="onBoardDrop($event, folder.id)"
-              ghost-class="ghost-board">
+          <div :ref="(el) => setFolderContainerRef(folder.id, el)" class="folder-wrapper">
+            <draggable
+              :list="folder.boards"
+              group="boards"
+              item-key="id"
+              @change="onBoardDrop($event, folder.id)"
+              ghost-class="ghost-board"
+            >
               <template #item="{ element }">
-                <div class="q-pl-xl" @dragenter.prevent="onDragEnterFolder(folder.id)"
-                  @dragleave.prevent="(event: DragEvent) => onDragLeaveFolder(folder.id, event)" draggable
-                  @dragstart="onDragStartBoard(element.id)">
+                <div
+                  class="q-pl-xl"
+                  @dragenter.prevent="onDragEnterFolder(folder.id)"
+                  @dragleave.prevent="(event: DragEvent) => onDragLeaveFolder(folder.id, event)"
+                  draggable
+                  @dragstart="onDragStartBoard(element.id)"
+                >
                   <EssentialLink v-bind="element" />
                 </div>
               </template>
             </draggable>
           </div>
-
         </q-expansion-item>
-        <div ref="rootZoneRef" class="root-drop-zone" :class="{ 'hovered-folder': hoveredFolderId === ROOT_FOLDER_ID }"
+        <div
+          ref="rootZoneRef"
+          class="root-drop-zone"
+          :class="{ 'hovered-folder': hoveredFolderId === ROOT_FOLDER_ID }"
           @dragenter.prevent="onDragEnterFolder(ROOT_FOLDER_ID)"
-          @dragleave.prevent="(event) => onDragLeaveFolder(ROOT_FOLDER_ID, event)">
-          <draggable :list="boardStore.topLevelBoards" group="boards" item-key="id" @change="onBoardDrop($event, null)"
-            ghost-class="ghost-board">
+          @dragleave.prevent="(event) => onDragLeaveFolder(ROOT_FOLDER_ID, event)"
+        >
+          <draggable
+            :list="boardStore.topLevelBoards"
+            group="boards"
+            item-key="id"
+            @change="onBoardDrop($event, null)"
+            ghost-class="ghost-board"
+          >
             <template #item="{ element }">
-              <div @dragenter.prevent="onDragEnterFolder(ROOT_FOLDER_ID)" draggable
-                @dragstart="onDragStartBoard(element.id)">
+              <div
+                @dragenter.prevent="onDragEnterFolder(ROOT_FOLDER_ID)"
+                draggable
+                @dragstart="onDragStartBoard(element.id)"
+              >
                 <EssentialLink v-bind="element" />
               </div>
             </template>
           </draggable>
         </div>
-
       </q-list>
     </q-drawer>
     <q-page-container>
@@ -120,9 +165,7 @@
     </q-dialog>
     <q-dialog v-model="isDeleteDialogOpen">
       <q-card>
-        <q-card-section class="text-h6">
-          Delete Folder "{{ activeFolder?.name }}"?
-        </q-card-section>
+        <q-card-section class="text-h6"> Delete Folder "{{ activeFolder?.name }}"? </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancel" color="primary" v-close-popup />
           <q-btn flat label="Delete" color="negative" @click="confirmDelete" />
@@ -136,8 +179,14 @@
         </q-card-section>
         <q-card-section>
           <q-input v-model="newFolderTitle" label="Folder name" autofocus />
-          <q-select v-model="newFolderType" :options="folderTypes" label="Folder type" class="q-mt-md" emit-value
-            map-options />
+          <q-select
+            v-model="newFolderType"
+            :options="folderTypes"
+            label="Folder type"
+            class="q-mt-md"
+            emit-value
+            map-options
+          />
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancel" color="primary" v-close-popup />
@@ -146,17 +195,26 @@
       </q-card>
     </q-dialog>
     <q-dialog v-model="isBoardDialogOpen">
-      <q-card class="q-pa-md" style="min-width: 300px;">
+      <q-card class="q-pa-md" style="min-width: 300px">
         <q-card-section>
           <div class="text-h6">Create Board</div>
         </q-card-section>
         <q-card-section>
           <q-input v-model="boardForm.name" label="Board Name" outlined dense class="q-mb-sm" />
-          <q-select v-model="boardForm.type" :options="[
-            { label: 'Public', value: 'public' },
-            { label: 'Private', value: 'private' },
-            { label: 'Shared', value: 'shared' },
-          ]" label="Board Type" emit-value map-options outlined dense class="q-mb-sm" />
+          <q-select
+            v-model="boardForm.type"
+            :options="[
+              { label: 'Public', value: 'public' },
+              { label: 'Private', value: 'private' },
+              { label: 'Shared', value: 'shared' },
+            ]"
+            label="Board Type"
+            emit-value
+            map-options
+            outlined
+            dense
+            class="q-mb-sm"
+          />
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancel" color="primary" v-close-popup />
@@ -193,7 +251,7 @@ const leftDrawerOpen = ref(false);
 const folderTypes = [
   { label: 'Public', value: 'public' },
   { label: 'Private', value: 'private' },
-  { label: 'Shared', value: 'shared' }
+  { label: 'Shared', value: 'shared' },
 ];
 
 const {
@@ -287,8 +345,8 @@ onMounted(async () => {
 }
 
 .ghost-board {
-  opacity: 0.2;
-  background-color: var(--q-primary);
+  background-color: #ccc;
+  border: 3px dashed gray;
   pointer-events: none;
 }
 
@@ -297,6 +355,6 @@ onMounted(async () => {
 }
 
 .root-drop-zone {
-  min-height: 60px;
+  min-height: 52px;
 }
 </style>

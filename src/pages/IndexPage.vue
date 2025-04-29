@@ -1,6 +1,6 @@
 <template>
   <div class="q-pa-md flex justify-between">
-    <q-card class="q-pa-md user-list_section" style="max-height: 350px; overflow-y: auto;">
+    <q-card class="q-pa-md user-list_section" style="max-height: 350px; overflow-y: auto">
       <q-card-section class="q-flex flex justify-between">
         <div class="text-h6">Users List</div>
         <q-btn icon="add" round flat color="primary" @click="openAddModal" />
@@ -24,19 +24,27 @@
       </q-list>
     </q-card>
     <q-dialog v-model="editDialog">
-      <q-card class="q-pa-md" style="min-width: 300px;">
+      <q-card class="q-pa-md" style="min-width: 300px">
         <q-card-section>
           <div class="text-h6">Edit User</div>
         </q-card-section>
         <q-card-section>
           <q-input v-model="editUser.name" label="Name" dense outlined class="q-mb-sm" />
           <q-input v-model="editUser.email" label="Email" dense outlined disable class="q-mb-sm" />
-          <q-select v-model="editUser.role" :options="roleOptions" option-value="value" option-label="label" emit-value
-            label="Role" dense outlined />
+          <q-select
+            v-model="editUser.role"
+            :options="roleOptions"
+            option-value="value"
+            option-label="label"
+            emit-value
+            label="Role"
+            dense
+            outlined
+          />
           <q-card-actions>
             <q-btn flat label="Delete" color="negative" @click="confirmDelete" class="q-mr-xs" />
 
-            <div style="flex-grow: 1; display: flex; justify-content: flex-end;">
+            <div style="flex-grow: 1; display: flex; justify-content: flex-end">
               <q-btn flat label="Cancel" color="primary" v-close-popup class="q-mr-xs" />
               <q-btn flat label="Save" color="primary" @click="saveEdit" />
             </div>
@@ -45,13 +53,20 @@
       </q-card>
     </q-dialog>
     <q-dialog v-model="addDialog">
-      <q-card class="q-pa-md" style="min-width: 300px;">
+      <q-card class="q-pa-md" style="min-width: 300px">
         <q-card-section>
           <div class="text-h6">Add New User</div>
         </q-card-section>
         <q-card-section>
           <q-input v-model="newUser.email" label="Email" dense outlined class="q-mb-sm" />
-          <q-input v-model="newUser.password" label="Password" type="password" dense outlined class="q-mb-sm" />
+          <q-input
+            v-model="newUser.password"
+            label="Password"
+            type="password"
+            dense
+            outlined
+            class="q-mb-sm"
+          />
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancel" color="primary" v-close-popup />
@@ -118,7 +133,7 @@ async function deleteUserHandler() {
 
   try {
     await deleteUser(editUser.value.id);
-    users.value = users.value.filter(u => u.id !== editUser.value.id);
+    users.value = users.value.filter((u) => u.id !== editUser.value.id);
     confirmDialog.value = false;
     editDialog.value = false;
   } catch (err) {
@@ -133,7 +148,7 @@ async function saveEdit() {
       role: editUser.value.role,
     });
 
-    const index = users.value.findIndex(u => u.id === editUser.value.id);
+    const index = users.value.findIndex((u) => u.id === editUser.value.id);
     if (index !== -1) {
       const user = users.value[index];
       if (user) {

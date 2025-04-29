@@ -21,30 +21,33 @@ export function useDialogs() {
     activeFolder.value = folder;
     newFolderName.value = folder.name;
     isRenameDialogOpen.value = true;
-  }
+  };
 
   const openDeleteDialog = (folder: Folder) => {
     activeFolder.value = folder;
     isDeleteDialogOpen.value = true;
-  }
+  };
 
   const openAddFolderDialog = () => {
     newFolderTitle.value = '';
     isAddFolderDialogOpen.value = true;
-  }
+  };
 
   const openBoardModal = () => {
     boardForm.value = { name: '', type: 'public' };
     isBoardDialogOpen.value = true;
-  }
+  };
 
   const confirmRename = async () => {
     if (activeFolder.value) {
       activeFolder.value.name = newFolderName.value.trim();
-      await updateFolder(activeFolder.value.id, { name: activeFolder.value.name, type: activeFolder.value.type })
+      await updateFolder(activeFolder.value.id, {
+        name: activeFolder.value.name,
+        type: activeFolder.value.type,
+      });
     }
     isRenameDialogOpen.value = false;
-  }
+  };
 
   const confirmDelete = async () => {
     if (activeFolder.value) {
@@ -57,7 +60,7 @@ export function useDialogs() {
         isDeleteDialogOpen.value = false;
       }
     }
-  }
+  };
 
   const confirmAddFolder = async () => {
     if (newFolderTitle.value.trim()) {
@@ -80,7 +83,7 @@ export function useDialogs() {
     } else {
       console.log('Enter folder name');
     }
-  }
+  };
 
   return {
     activeFolder,

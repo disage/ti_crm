@@ -1,13 +1,6 @@
 <template>
-  <q-item
-    clickable
-    tag="router-link"
-    :to="`/board/${id}`"
-  >
-    <q-item-section
-      v-if="icon"
-      avatar
-    >
+  <q-item clickable tag="router-link" :to="`/board/${id}`">
+    <q-item-section v-if="icon" avatar>
       <q-icon :name="icon" />
     </q-item-section>
 
@@ -22,19 +15,19 @@
 defineProps({
   name: {
     type: String,
-    required: true
+    required: true,
   },
   type: {
     type: String,
-    default: ''
+    default: '',
   },
   id: {
     type: String,
-    default: ''
+    default: '',
   },
   icon: {
     type: String,
-    default: 'dashboard'
-  }
+    default: 'dashboard',
+  },
 });
 </script>
