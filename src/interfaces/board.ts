@@ -42,13 +42,22 @@ export interface Column {
   field: string;
   align: 'left' | 'right' | 'center';
   width: number;
-  type: 'text' | 'number' | 'select' | 'date';
-  options?: [];
+  type: 'TEXT' | 'NUMBER' | 'SINGLE_SELECT' | 'DATE';
+  settings?: {
+    options?: string[];
+    [key: string]: unknown;
+  };
 }
 
 export interface Row {
   id: string;
-  [key: string]: unknown;
+  [key: string]: CellData | string;
+}
+
+export interface CellData {
+  value: string | number | null;
+  originalValue: string | number | null;
+  cellId: string;
 }
 
 export interface BoardResponse {
@@ -65,7 +74,25 @@ export interface CreateBoardColumn {
   boardId: string;
   name: string;
   // type: ColumnType;
-  type: 'TEXT' | 'NUMBER' | 'SELECT' | 'DATE';
+  type: 'TEXT' | 'NUMBER' | 'SINGLE_SELECT' | 'DATE';
   order?: number;
-  settings?: object;
+  settings?: {
+    options?: string[];
+    [key: string]: unknown;
+  };
+}
+
+export interface UpdateColumnPayload {
+  name?: string;
+  type?: 'TEXT' | 'NUMBER' | 'SINGLE_SELECT' | 'DATE';
+  settings?: {
+    options?: string[];
+    [key: string]: unknown;
+  };
+}
+
+export interface Cell {
+  id: string;
+  columnId: string;
+  value: unknown;
 }

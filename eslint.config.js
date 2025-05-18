@@ -24,17 +24,15 @@ export default defineConfigWithVueTs(
   js.configs.recommended,
   pluginVue.configs['flat/essential'],
 
-  // Правила для TypeScript и Vue
   {
     files: ['**/*.ts', '**/*.vue'],
     rules: {
       '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
       'no-await-in-loop': 'error',
-      'promise/prefer-await-to-then': 'off', // Указано с префиксом 'promise/'
+      'promise/prefer-await-to-then': 'off',
     },
   },
 
-  // Настройка для TypeScript
   vueTsConfigs.recommendedTypeChecked,
 
   {
@@ -59,7 +57,6 @@ export default defineConfigWithVueTs(
     },
   },
 
-  // Конфигурация для PWA и сервисного работника
   {
     files: ['src-pwa/custom-service-worker.ts'],
     languageOptions: {
@@ -69,17 +66,14 @@ export default defineConfigWithVueTs(
     },
   },
 
-  // Пропуск форматирования Prettier для конфликтующих правил
   prettierSkipFormatting,
 
-  // Включение конфигурации Prettier, чтобы отключить конфликтующие правила
   eslintConfigPrettier,
 
-  // Включение Prettier плагина
   {
     plugins: {
       prettier: eslintPluginPrettier,
-      promise: eslintPluginPromise, // Добавляем плагин promise
+      promise: eslintPluginPromise,
     },
     rules: {
       'prettier/prettier': [

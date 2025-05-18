@@ -7,6 +7,7 @@ import type {
   BoardResponse,
   CreateBoardColumn,
   UpdateBoardDto,
+  UpdateColumnPayload,
 } from 'src/interfaces/board';
 
 // BOARD
@@ -54,8 +55,9 @@ export const createBoardColumn = (data: CreateBoardColumn) => {
   return api.post('/board/column', data);
 };
 
-export const renameColumn = (id: string, name: string) =>
-  api.patch(`/board/column/${id}`, { name });
+export const updateColumn = (id: string, data: UpdateColumnPayload) => {
+  return api.patch(`/board/column/${id}`, data);
+};
 
 export const deleteBoardColumn = (id: string) => api.delete(`/board/column/${id}`);
 
@@ -68,3 +70,6 @@ export const createBoardRow = (boardId: string) => {
 export const deleteBoardRow = (id: string) => api.delete(`/board/row/${id}`);
 
 // CELL
+export const updateBoardCell = (id: string, value: string | number | null) => {
+  return api.patch(`/board/cell/${id}`, { value });
+};

@@ -80,7 +80,7 @@
                     <q-list>
                       <q-item clickable>
                         <q-item-section>
-                          <q-item-label class="text-h6">Type:</q-item-label>
+                          <q-item-label>Type:</q-item-label>
                           <q-select
                             v-model="col.type"
                             :options="availableTypes"
@@ -95,7 +95,7 @@
                       </q-item>
                       <q-item
                         clickable
-                        v-if="col.type === 'select'"
+                        v-if="col.type === 'SINGLE_SELECT'"
                         flat
                         dense
                         icon="settings"
@@ -108,31 +108,37 @@
                       </q-item>
                     </q-list>
                   </q-btn-dropdown>
-                  <span class="resize-handle" @mousedown="startResize($event, index)">|</span>
+                  <span class="resize-handle" @mousedown="startResize($event, index)"></span>
                 </div>
               </q-th>
             </q-tr>
           </template>
           <template v-slot:body="props">
             <q-tr :props="props">
-              <q-td>{{ props.rowIndex }}</q-td>
+              <q-td>{{ props.rowIndex + 1 }}</q-td>
               <q-td>
                 <q-btn color="red" @click="removeRow(props.row.id)" icon="delete" flat />
               </q-td>
               <q-td v-for="col in columns" :key="col.id">
-                <template v-if="col.type === 'text' || col.type === 'number'">
+                <template v-if="col.type === 'TEXT'">
                   <q-input
-                    v-model="props.row[col.field]"
+                    v-model="props.row[col.field].value"
                     dense
                     borderless
-                    :type="col.type"
+                    type="text"
                     :disable="col.name === 'id'"
+                    @blur="updateCell(props.row[col.field])"
+                    @keyup.enter="updateCell(props.row[col.field])"
                   />
                 </template>
 
-                <template v-else-if="col.type === 'date'">
+                <template v-else-if="col.type === 'NUMBER'">
+                  <q-input v-model="props.row[col.field].value" dense borderless type="number" />
+                </template>
+
+                <template v-else-if="col.type === 'DATE'">
                   <q-input
-                    v-model="props.row[col.field]"
+                    v-model="props.row[col.field].value"
                     dense
                     borderless
                     mask="####-##-##"
@@ -140,21 +146,21 @@
                   >
                     <template v-slot:append>
                       <q-icon name="event" class="cursor-pointer">
-                        <q-popup-proxy>
-                          <q-date v-model="props.row[col.field]" mask="YYYY-MM-DD" />
+                        <q-popup-proxy @hide="() => updateCell(props.row[col.field])">
+                          <q-date v-model="props.row[col.field].value" mask="YYYY-MM-DD" />
                         </q-popup-proxy>
                       </q-icon>
                     </template>
                   </q-input>
                 </template>
 
-                <template v-else-if="col.type === 'select'">
+                <template v-else-if="col.type === 'SINGLE_SELECT'">
                   <q-select
-                    v-model="props.row[col.field]"
-                    :options="col.options || []"
+                    v-model="props.row[col.field].value"
+                    :options="col.settings?.options || []"
+                    @update:model-value="() => updateCell(props.row[col.field])"
                     dense
                     borderless
-                    :disabled="col.name === 'ID'"
                   />
                 </template>
               </q-td>
@@ -171,7 +177,7 @@
         <q-card-section>
           <q-input v-model="newOption" label="New Option" @keyup.enter="addOption" />
           <q-list>
-            <q-item v-for="(option, index) in selectedColumn?.options" :key="index">
+            <q-item v-for="(option, index) in selectedColumn?.settings?.options" :key="index">
               <q-item-section>{{ option }}</q-item-section>
               <q-item-section side>
                 <q-btn icon="delete" flat dense @click="removeOption(index)" />
@@ -213,40 +219,47 @@ import {
   getBoardById,
   deleteBoardColumn,
   deleteBoardRow,
-  renameColumn,
   updateBoard,
   createBoardRow,
+  updateColumn,
+  updateBoardCell,
 } from 'src/api/boards';
 import { useBoardStore } from 'src/stores/boardStore';
-import type { Column, CreateBoardColumn, Row } from 'src/interfaces/board';
+import type {
+  Cell,
+  CellData,
+  Column,
+  CreateBoardColumn,
+  Row,
+  UpdateColumnPayload,
+} from 'src/interfaces/board';
 
 const boardStore = useBoardStore();
 const route = useRoute();
 const router = useRouter();
 
-// const boardId = route.params.boardId as string;
 const boardId = computed(() => route.params.boardId as string);
 
-const boardMenuOpen = ref(false);
-const tableRef = ref();
-const availableTypes: Column['type'][] = ['text', 'number', 'date', 'select'];
-
-const columns = ref<Column[]>([]);
-const rows = ref<Row[]>([]);
-const boardName = ref('');
 const boardIcon = ref('');
+const boardMenuOpen = ref(false);
+const boardName = ref('');
 const boardType = ref('');
-const isEditingName = ref(false);
+const columns = ref<Column[]>([]);
 const editedName = ref(boardName.value);
-const isRenameDialogOpen = ref(false);
-const renameTargetCol = ref<Column | null>(null);
-const newColumnName = ref('');
+const isEditingName = ref(false);
 const isOptionsModalOpen = ref(false);
-const selectedColumn = ref<Column | null>(null);
+const isRenameDialogOpen = ref(false);
+const newColumnName = ref('');
 const newOption = ref('');
 const pagination = ref({ rowsPerPage: 50 });
-let resizingColumnIndex: number | null = null;
+const renameTargetCol = ref<Column | null>(null);
+const rows = ref<Row[]>([]);
+const selectedColumn = ref<Column | null>(null);
+const tableRef = ref();
+
+const availableTypes: Column['type'][] = ['TEXT', 'NUMBER', 'DATE', 'SINGLE_SELECT'];
 let draggedColumnIndex: number | null = null;
+let resizingColumnIndex: number | null = null;
 
 const toggleBoardMenu = () => {
   boardMenuOpen.value = true;
@@ -276,9 +289,8 @@ const saveRename = async () => {
   if (!renameTargetCol.value) return;
 
   try {
-    await renameColumn(renameTargetCol.value.id, newColumnName.value);
+    await updateColumn(renameTargetCol.value.id, { name: newColumnName.value });
 
-    // После успешного запроса обновляем локально
     renameTargetCol.value.label = newColumnName.value;
     renameTargetCol.value.name = newColumnName.value; // если ты name == label хочешь
   } catch (error) {
@@ -298,8 +310,26 @@ const addRow = async () => {
       id: createdRow.id,
     };
 
+    const cellMap = new Map<string, Cell>(
+      (createdRow.cells as Cell[]).map((cell) => [cell.columnId, cell])
+    );
+
     columns.value.forEach((column) => {
-      newFrontendRow[column.name] = null;
+      const cell = cellMap.get(column.id);
+
+      // Приводим value к string | number | null
+      const val =
+        cell?.value === undefined || cell?.value === null
+          ? null
+          : typeof cell.value === 'string' || typeof cell.value === 'number'
+            ? cell.value
+            : null;
+
+      newFrontendRow[column.name] = {
+        value: val,
+        originalValue: val,
+        cellId: cell?.id ?? '',
+      };
     });
 
     rows.value.push(newFrontendRow);
@@ -319,11 +349,11 @@ const addColumn = async () => {
   }
 
   const newColumnData: CreateBoardColumn = {
-    boardId: boardId.value, // ID доски
-    name: newColName, // Имя новой колонки
-    type: 'TEXT', // Тип колонки по умолчанию
-    order: columns.value.length + 1, // Индекс для сортировки
-    settings: {}, // Пустой объект для настроек
+    boardId: boardId.value,
+    name: newColName,
+    type: 'TEXT',
+    order: columns.value.length + 1,
+    settings: {},
   };
 
   try {
@@ -333,12 +363,12 @@ const addColumn = async () => {
     const newFrontendColumn: Column = {
       id: createdColumn.id,
       name: newColName,
-      type: newColumnData.type.toLowerCase() as 'number' | 'text' | 'select' | 'date',
+      type: newColumnData.type.toLowerCase() as 'NUMBER' | 'TEXT' | 'SINGLE_SELECT' | 'DATE',
       label: newColName,
       field: newColName,
       align: 'left',
       width: 150,
-      options: [],
+      settings: {},
       // options: newColumnData.settings.options || []
       //   order: newColumnData.order,
     };
@@ -357,11 +387,6 @@ const removeRow = async (id: string) => {
     console.error('Error while deleting row', error);
   }
 };
-
-// const renameColumn = (column: Column) => {
-//   const col = columns.value.find((col) => col.name === column.name);
-//   if (col) col.label = prompt('Enter new column name:', col.label) || col.label;
-// };
 
 const removeColumn = async (column: Column) => {
   try {
@@ -419,9 +444,25 @@ const stopResize = () => {
   document.removeEventListener('mouseup', stopResize);
 };
 
-const onColumnTypeChange = (col: Column) => {
-  if (col.type === 'select' && !col.options) {
-    col.options = [];
+const onColumnTypeChange = async (col: Column) => {
+  if (col.type === 'SINGLE_SELECT') {
+    if (!col.settings) {
+      col.settings = {};
+    }
+    if (!col.settings.options) {
+      col.settings.options = [];
+    }
+  }
+
+  const payload: UpdateColumnPayload = {
+    type: col.type.toUpperCase() as 'TEXT' | 'NUMBER' | 'SINGLE_SELECT' | 'DATE',
+    ...(col.settings ? { settings: col.settings } : {}),
+  };
+
+  try {
+    await updateColumn(col.id, payload);
+  } catch (error) {
+    console.error('Failed to update column type:', error);
   }
 };
 
@@ -431,14 +472,25 @@ const openOptionsModal = (col: Column) => {
 };
 
 const addOption = () => {
-  // if (selectedColumn.value && newOption.value.trim()) {
-  //     selectedColumn.value.options?.push(newOption.value.trim());
-  //     newOption.value = '';
-  // }
+  const option = newOption.value.trim();
+  if (!selectedColumn.value || !option) return;
+
+  // Инициализация settings и options, если они отсутствуют
+  if (!selectedColumn.value.settings) {
+    selectedColumn.value.settings = { options: [] };
+  }
+
+  if (!Array.isArray(selectedColumn.value.settings.options)) {
+    selectedColumn.value.settings.options = [];
+  }
+
+  // Добавление новой опции
+  selectedColumn.value.settings.options.push(option);
+  newOption.value = '';
 };
 
 const removeOption = (index: number) => {
-  selectedColumn.value?.options?.splice(index, 1);
+  selectedColumn.value?.settings?.options?.splice(index, 1);
 };
 
 const startEditing = async () => {
@@ -460,6 +512,19 @@ const finishEditing = async () => {
     }
   }
   isEditingName.value = false;
+};
+
+const updateCell = async (cell: CellData) => {
+  if (JSON.stringify(cell.value) === JSON.stringify(cell.originalValue)) {
+    return;
+  }
+
+  try {
+    await updateBoardCell(cell.cellId, cell.value);
+    cell.originalValue = JSON.parse(JSON.stringify(cell.value));
+  } catch (err) {
+    console.error('Ошибка при обновлении ячейки:', err);
+  }
 };
 
 onMounted(async () => {
@@ -484,15 +549,25 @@ const loadBoard = async (id: string) => {
       field: col.name,
       align: 'left',
       width: 150,
-      type: col.type || 'text',
-      options: col.options || [],
+      type: col.type || 'TEXT',
+      settings: col.settings || {},
     }));
 
     rows.value = boardData.rows.map((row: Row) => {
-      const rowData: Row = { id: row.id };
+      const rowData: Row = {
+        id: row.id,
+      };
+
       boardData.columns.forEach((col: Column) => {
-        rowData[col.name] = row[col.name];
+        const cell = row[col.name] as CellData | undefined;
+
+        rowData[col.name] = {
+          value: cell?.value ?? null,
+          originalValue: JSON.parse(JSON.stringify(cell?.value ?? null)),
+          cellId: cell?.cellId ?? '',
+        };
       });
+
       return rowData;
     });
   } catch (error) {
@@ -528,25 +603,35 @@ const loadBoard = async (id: string) => {
 }
 
 .resize-handle {
-  width: 4px;
+  padding: 0 1px;
   height: 100%;
-  background-color: transparent;
   position: absolute;
-  right: 0;
+  right: -1px;
   top: 0;
   cursor: ew-resize;
+  background-color: #ccc;
 }
 
 .resize-handle:hover {
   background-color: gray;
 }
 
-::deep .q-field__native:focus {
+::v-deep(.q-field__native:focus) {
   border: 1px solid #ccc;
 }
 
-::deep .q-table th,
-.q-table td {
+::v-deep(.q-table td) {
   padding: 5px;
+}
+
+::v-deep(.q-table th) {
+  padding: 0 0 0 5px !important;
+}
+
+::v-deep(.q-table--horizontal-separator thead th),
+::v-deep(.q-table--horizontal-separator tbody tr > td),
+::v-deep(.q-table--cell-separator thead th),
+::v-deep(.q-table--cell-separator) {
+  border-right-width: 1px;
 }
 </style>
