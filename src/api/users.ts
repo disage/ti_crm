@@ -3,7 +3,7 @@ import type { NewUser, User, UserRole } from 'src/interfaces/user';
 
 export const getUsers = () => api.get<User[]>('/users');
 
-export const addUser = (data: NewUser) => api.post('/users', data);
+export const registerUser = (data: NewUser) => api.post('/auth/register', data);
 
 export const updateUser = (id: string, data: { name: string; role: UserRole }) =>
   api.patch(`/users/${id}`, data);

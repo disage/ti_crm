@@ -92,7 +92,7 @@ import { ref, onMounted } from 'vue';
 
 import type { User, NewUser } from 'src/interfaces/user';
 import { UserRole } from 'src/interfaces/user';
-import { getUsers, addUser, updateUser, deleteUser } from 'src/api/users';
+import { getUsers, updateUser, deleteUser, registerUser } from 'src/api/users';
 import { roleLabels, roleOptions } from 'src/constants/user';
 
 const users = ref<User[]>([]);
@@ -165,7 +165,7 @@ async function saveEdit() {
 
 async function addUserHandler() {
   try {
-    await addUser(newUser.value);
+    await registerUser(newUser.value);
     await fetchUsers();
     addDialog.value = false;
   } catch (err) {

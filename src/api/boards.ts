@@ -73,3 +73,9 @@ export const deleteBoardRow = (id: string) => api.delete(`/board/row/${id}`);
 export const updateBoardCell = (id: string, value: string | number | null) => {
   return api.patch(`/board/cell/${id}`, { value });
 };
+
+export const getBoardCell = (rowId: string, columnId: string) => {
+  return api.get('/board/cell', {
+    params: { rowId, columnId },
+  });
+};

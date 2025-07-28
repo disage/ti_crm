@@ -127,13 +127,20 @@
                     borderless
                     type="text"
                     :disable="col.name === 'id'"
-                    @blur="updateCell(props.row[col.field])"
-                    @keyup.enter="updateCell(props.row[col.field])"
+                    @blur="updateCell(props.row[col.field], col.field, props.row.id)"
+                    @keyup.enter="updateCell(props.row[col.field], col.field, props.row.id)"
                   />
                 </template>
 
                 <template v-else-if="col.type === 'NUMBER'">
-                  <q-input v-model="props.row[col.field].value" dense borderless type="number" />
+                  <q-input
+                    v-model="props.row[col.field].value"
+                    dense
+                    borderless
+                    type="number"
+                    @blur="updateCell(props.row[col.field], col.field, props.row.id)"
+                    @keyup.enter="updateCell(props.row[col.field], col.field, props.row.id)"
+                  />
                 </template>
 
                 <template v-else-if="col.type === 'DATE'">
@@ -142,11 +149,14 @@
                     dense
                     borderless
                     mask="####-##-##"
-                    :disabled="col.name === 'ID'"
+                    @blur="updateCell(props.row[col.field], col.field, props.row.id)"
+                    @keyup.enter="updateCell(props.row[col.field], col.field, props.row.id)"
                   >
                     <template v-slot:append>
                       <q-icon name="event" class="cursor-pointer">
-                        <q-popup-proxy @hide="() => updateCell(props.row[col.field])">
+                        <q-popup-proxy
+                          @hide="() => updateCell(props.row[col.field], col.field, props.row.id)"
+                        >
                           <q-date v-model="props.row[col.field].value" mask="YYYY-MM-DD" />
                         </q-popup-proxy>
                       </q-icon>
@@ -158,7 +168,9 @@
                   <q-select
                     v-model="props.row[col.field].value"
                     :options="col.settings?.options || []"
-                    @update:model-value="() => updateCell(props.row[col.field])"
+                    @update:model-value="
+                      () => updateCell(props.row[col.field], col.field, props.row.id)
+                    "
                     dense
                     borderless
                   />
@@ -175,7 +187,7 @@
           <div class="text-h6">Edit Select Options</div>
         </q-card-section>
         <q-card-section>
-          <q-input v-model="newOption" label="New Option" @keyup.enter="addOption" />
+          <q-input v-model="newColumnOption" label="New Option" @keyup.enter="addOption" />
           <q-list>
             <q-item v-for="(option, index) in selectedColumn?.settings?.options" :key="index">
               <q-item-section>{{ option }}</q-item-section>
@@ -186,7 +198,7 @@
           </q-list>
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat label="Close" v-close-popup />
+          <q-btn flat label="Close" v-close-popup @click="onCloseOptionsModal()" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -222,6 +234,7 @@ import {
   updateBoard,
   createBoardRow,
   updateColumn,
+  getBoardCell,
   updateBoardCell,
 } from 'src/api/boards';
 import { useBoardStore } from 'src/stores/boardStore';
@@ -250,7 +263,7 @@ const isEditingName = ref(false);
 const isOptionsModalOpen = ref(false);
 const isRenameDialogOpen = ref(false);
 const newColumnName = ref('');
-const newOption = ref('');
+const newColumnOption = ref('');
 const pagination = ref({ rowsPerPage: 50 });
 const renameTargetCol = ref<Column | null>(null);
 const rows = ref<Row[]>([]);
@@ -363,7 +376,7 @@ const addColumn = async () => {
     const newFrontendColumn: Column = {
       id: createdColumn.id,
       name: newColName,
-      type: newColumnData.type.toLowerCase() as 'NUMBER' | 'TEXT' | 'SINGLE_SELECT' | 'DATE',
+      type: newColumnData.type,
       label: newColName,
       field: newColName,
       align: 'left',
@@ -374,6 +387,14 @@ const addColumn = async () => {
     };
 
     columns.value.push(newFrontendColumn);
+
+    rows.value.forEach((row) => {
+      row[newColName] = {
+        value: null,
+        originalValue: null,
+        cellId: '',
+      };
+    });
   } catch (error) {
     console.error('Error creating new column:', error);
   }
@@ -471,11 +492,11 @@ const openOptionsModal = (col: Column) => {
   isOptionsModalOpen.value = true;
 };
 
-const addOption = () => {
-  const option = newOption.value.trim();
+const addOption = async () => {
+  const option = newColumnOption.value.trim();
   if (!selectedColumn.value || !option) return;
 
-  // Инициализация settings и options, если они отсутствуют
+  // Initialize settings and options if they are missing
   if (!selectedColumn.value.settings) {
     selectedColumn.value.settings = { options: [] };
   }
@@ -484,13 +505,44 @@ const addOption = () => {
     selectedColumn.value.settings.options = [];
   }
 
-  // Добавление новой опции
   selectedColumn.value.settings.options.push(option);
-  newOption.value = '';
+
+  const payload: UpdateColumnPayload = {
+    settings: selectedColumn.value.settings,
+  };
+
+  try {
+    await updateColumn(selectedColumn.value.id, payload);
+    newColumnOption.value = '';
+  } catch (error) {
+    console.error('Failed to add option and update column:', error);
+  }
 };
 
-const removeOption = (index: number) => {
-  selectedColumn.value?.settings?.options?.splice(index, 1);
+const removeOption = async (index: number) => {
+  if (
+    !selectedColumn.value ||
+    !selectedColumn.value.settings ||
+    !Array.isArray(selectedColumn.value.settings.options)
+  ) {
+    return;
+  }
+
+  selectedColumn.value.settings.options.splice(index, 1);
+
+  const payload: UpdateColumnPayload = {
+    settings: selectedColumn.value.settings,
+  };
+
+  try {
+    await updateColumn(selectedColumn.value.id, payload);
+  } catch (error) {
+    console.error('Failed to remove option and update column:', error);
+  }
+};
+
+const onCloseOptionsModal = () => {
+  newColumnOption.value = '';
 };
 
 const startEditing = async () => {
@@ -514,16 +566,30 @@ const finishEditing = async () => {
   isEditingName.value = false;
 };
 
-const updateCell = async (cell: CellData) => {
-  if (JSON.stringify(cell.value) === JSON.stringify(cell.originalValue)) {
-    return;
-  }
-
+const updateCell = async (cell: CellData, colField: string, rowId: string) => {
   try {
-    await updateBoardCell(cell.cellId, cell.value);
-    cell.originalValue = JSON.parse(JSON.stringify(cell.value));
+    const column = columns.value.find((c) => c.field === colField);
+    if (!column) throw new Error('Column not found');
+
+    // If there is no cellId, we try to find a cell on the server
+    if (!cell.cellId) {
+      const { data: existingCell } = await getBoardCell(rowId, column.id);
+      if (existingCell) {
+        cell.cellId = existingCell.id;
+        cell.originalValue = existingCell.value;
+      } else {
+        console.warn('Cell not found on server, although expected');
+        return; // или break, если не хотим продолжать без cellId
+      }
+    }
+
+    const isChanged = JSON.stringify(cell.value) !== JSON.stringify(cell.originalValue);
+    if (isChanged && cell.cellId) {
+      await updateBoardCell(cell.cellId, cell.value);
+      cell.originalValue = JSON.parse(JSON.stringify(cell.value));
+    }
   } catch (err) {
-    console.error('Ошибка при обновлении ячейки:', err);
+    console.error('Error updating cell:', err);
   }
 };
 
@@ -616,7 +682,7 @@ const loadBoard = async (id: string) => {
   background-color: gray;
 }
 
-::v-deep(.q-field__native:focus) {
+::v-deep(.q-table .q-field__native:focus) {
   border: 1px solid #ccc;
 }
 
